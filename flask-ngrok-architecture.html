@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask + ngrok 架構流程圖</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            padding: 40px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .section:last-child {
+            border-bottom: none;
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mermaid {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #e9ecef;
+        }
+        
+        .description {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .description h3 {
+            color: #d63031;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .description ul {
+            margin-left: 20px;
+            color: #2d3436;
+        }
+        
+        .description li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 Flask + ngrok 架構流程圖</h1>
+            <p>本地開發環境到公開網路的完整部署架構</p>
+        </div>
+
+        <!-- 1. 整體架構圖 -->
+        <div class="section">
+            <h2>🏗️ 整體架構圖</h2>
+            <div class="mermaid">
+graph TB
+    subgraph 本地環境["🖥️ 本地開發環境"]
+        VE[🐍 虛擬環境<br/>venv]
+        APP[⚡ Flask 應用程式<br/>app.py<br/>Port: 5000]
+        VE --> APP
+    end
+    
+    subgraph 網路層["🌐 網路連接層"]
+        LOCAL[🏠 localhost:5000<br/>本地伺服器]
+        NGROK[🚇 ngrok 隧道<br/>TCP 隧道服務]
+        PUBLIC[🌍 公開 URL<br/>*.ngrok.io<br/>HTTPS 加密]
+    end
+    
+    APP --> LOCAL
+    LOCAL --> NGROK
+    NGROK --> PUBLIC
+    
+    USER1[👤 本地使用者<br/>開發者] --> LOCAL
+    USER2[👥 外部使用者<br/>測試者/客戶] --> PUBLIC
+    
+    classDef localEnv fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef networkLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef users fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class VE,APP localEnv
+    class LOCAL,NGROK,PUBLIC networkLayer
+    class USER1,USER2 users
+            </div>
+            <div class="description">
+                <h3>📚 學習重點</h3>
+                <ul>
+                    <li><strong>本地開發環境</strong>：Flask 應用運行在虛擬環境中，確保依賴隔離</li>
+                    <li><strong>網路隧道技術</strong>：ngrok 建立安全隧道，將本地服務暴露到公網</li>
+                    <li><strong>雙重訪問模式</strong>：支援本地開發和遠端測試兩種使用場景</li>
+                    <li><strong>HTTPS 加密</strong>：ngrok 自動提供 SSL 證書，確保傳輸安全</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 2. 資料流程圖 -->
+        <div class="section">
+            <h2>📊 資料流程圖</h2>
+            <div class="mermaid">
+flowchart LR
+    subgraph 請求流程["📥 請求處理流程"]
+        REQ[🌐 HTTP 請求]
+        ROUTE[🛣️ Flask 路由]
+        LOGIC[⚙️ 業務邏輯]
+        RESP[📤 HTTP 回應]
+    end
+    
+    subgraph 本地流程["🏠 本地訪問流程"]
+        LOCAL_USER[👤 本地使用者]
+        LOCAL_REQ[📍 localhost:5000]
+    end
+    
+    subgraph 遠端流程["🌍 遠端訪問流程"]
+        REMOTE_USER[👥 遠端使用者]
+        NGROK_URL[🚇 *.ngrok.io]
+        TUNNEL[🔗 ngrok 隧道]
+    end
+    
+    LOCAL_USER --> LOCAL_REQ
+    LOCAL_REQ --> REQ
+    
+    REMOTE_USER --> NGROK_URL
+    NGROK_URL --> TUNNEL
+    TUNNEL --> REQ
+    
+    REQ --> ROUTE
+    ROUTE --> LOGIC
+    LOGIC --> RESP
+    
+    RESP --> LOCAL_REQ
+    RESP --> TUNNEL
+    TUNNEL --> NGROK_URL
+    
+    classDef request fill:#ffecb3,stroke:#ff8f00,stroke-width:2px
+    classDef local fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    classDef remote fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    
+    class REQ,ROUTE,LOGIC,RESP request
+    class LOCAL_USER,LOCAL_REQ local
+    class REMOTE_USER,NGROK_URL,TUNNEL remote
+            </div>
+            <div class="description">
+                <h3>📚 學習重點</h3>
+                <ul>
+                    <li><strong>統一處理邏輯</strong>：無論本地或遠端訪問，Flask 應用處理邏輯完全相同</li>
+                    <li><strong>透明代理</strong>：ngrok 作為透明代理，不修改請求內容</li>
+                    <li><strong>雙向資料流</strong>：請求和回應都經過相同的路徑返回</li>
+                    <li><strong>路由機制</strong>：Flask 路由系統決定如何處理不同的 URL 請求</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 3. 部署流程圖 -->
+        <div class="section">
+            <h2>🚀 部署流程圖</h2>
+            <div class="mermaid">
+sequenceDiagram
+    participant DEV as 👨‍💻 開發者
+    participant VENV as 🐍 虛擬環境
+    participant FLASK as ⚡ Flask App
+    participant NGROK as 🚇 ngrok
+    participant USER as 👥 外部使用者
+    
+    Note over DEV,USER: 部署啟動流程
+    
+    DEV->>VENV: 1. 啟動虛擬環境
+    Note right of VENV: source venv/bin/activate
+    
+    DEV->>VENV: 2. 安裝依賴
+    Note right of VENV: pip install flask
+    
+    DEV->>FLASK: 3. 啟動 Flask 應用
+    Note right of FLASK: python app.py<br/>運行在 localhost:5000
+    
+    DEV->>NGROK: 4. 啟動 ngrok 隧道
+    Note right of NGROK: ngrok http 5000
+    
+    NGROK-->>DEV: 5. 返回公開 URL
+    Note left of NGROK: https://abc123.ngrok.io
+    
+    Note over DEV,USER: 服務運行階段
+    
+    USER->>NGROK: 6. 訪問公開 URL
+    NGROK->>FLASK: 7. 轉發請求到本地
+    FLASK->>NGROK: 8. 返回處理結果
+    NGROK->>USER: 9. 回傳給使用者
+    
+    Note over DEV,USER: 開發測試循環
+    
+    DEV->>FLASK: 10. 修改程式碼
+    FLASK->>FLASK: 11. 自動重載
+    Note right of FLASK: debug=True 模式
+            </div>
+            <div class="description">
+                <h3>📚 學習重點</h3>
+                <ul>
+                    <li><strong>順序性部署</strong>：必須按照正確順序啟動各個組件</li>
+                    <li><strong>依賴管理</strong>：虛擬環境確保 Python 依賴的隔離和管理</li>
+                    <li><strong>即時開發</strong>：Flask debug 模式支援程式碼修改後自動重載</li>
+                    <li><strong>URL 動態性</strong>：每次啟動 ngrok 都會產生新的隨機 URL</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 4. 網路架構圖 -->
+        <div class="section">
+            <h2>🌐 網路架構圖</h2>
+            <div class="mermaid">
+graph TD
+    subgraph 本地網路["🏠 本地網路環境"]
+        LOCALHOST[🖥️ localhost<br/>127.0.0.1:5000]
+        PRIVATE_IP[🏠 私有 IP<br/>192.168.x.x:5000]
+    end
+    
+    subgraph 防火牆["🔥 網路防火牆"]
+        FIREWALL[🛡️ NAT/防火牆<br/>阻擋外部訪問]
+    end
+    
+    subgraph ngrok服務["🚇 ngrok 雲端服務"]
+        NGROK_SERVER[☁️ ngrok 伺服器<br/>美國/歐洲/亞洲]
+        TUNNEL_CONN[🔗 加密隧道連接]
+        PUBLIC_ENDPOINT[🌍 公開端點<br/>*.ngrok.io]
+    end
+    
+    subgraph 外部網路["🌐 公開網路"]
+        INTERNET[🌍 網際網路]
+        EXTERNAL_USER[👥 外部使用者<br/>任何地點]
+    end
+    
+    LOCALHOST --> FIREWALL
+    PRIVATE_IP --> FIREWALL
+    
+    FIREWALL -.->|❌ 阻擋| INTERNET
+    
+    LOCALHOST --> TUNNEL_CONN
+    TUNNEL_CONN --> NGROK_SERVER
+    NGROK_SERVER --> PUBLIC_ENDPOINT
+    PUBLIC_ENDPOINT --> INTERNET
+    
+    EXTERNAL_USER --> INTERNET
+    INTERNET --> PUBLIC_ENDPOINT
+    
+    classDef local fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef firewall fill:#ffebee,stroke:#f44336,stroke-width:2px
+    classDef ngrok fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
+    classDef external fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    
+    class LOCALHOST,PRIVATE_IP local
+    class FIREWALL firewall
+    class NGROK_SERVER,TUNNEL_CONN,PUBLIC_ENDPOINT ngrok
+    class INTERNET,EXTERNAL_USER external
+            </div>
+            <div class="description">
+                <h3>📚 學習重點</h3>
+                <ul>
+                    <li><strong>NAT 穿透</strong>：ngrok 解決了家用網路 NAT 和防火牆的限制</li>
+                    <li><strong>加密隧道</strong>：所有資料傳輸都經過 TLS 加密保護</li>
+                    <li><strong>全球可達</strong>：任何有網路連接的地方都能訪問您的本地服務</li>
+                    <li><strong>反向代理</strong>：ngrok 作為反向代理，將外部請求轉發到內部服務</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 5. 安全架構圖 -->
+        <div class="section">
+            <h2>🔒 安全架構圖</h2>
+            <div class="mermaid">
+graph TB
+    subgraph 安全層級["🛡️ 多層安全防護"]
+        subgraph L1["第一層：傳輸安全"]
+            HTTPS[🔐 HTTPS 加密<br/>TLS 1.2+]
+            CERT[📜 SSL 證書<br/>ngrok 自動管理]
+        end
+        
+        subgraph L2["第二層：隧道安全"]
+            TUNNEL_AUTH[🔑 隧道認證<br/>ngrok token]
+            ENCRYPT[🔒 端到端加密<br/>AES-256]
+        end
+        
+        subgraph L3["第三層：應用安全"]
+            FLASK_SEC[⚡ Flask 安全<br/>CSRF, Session]
+            INPUT_VAL[✅ 輸入驗證<br/>資料清理]
+        end
+        
+        subgraph L4["第四層：存取控制"]
+            AUTH[👤 身份驗證<br/>登入機制]
+            AUTHZ[🎫 授權控制<br/>權限管理]
+        end
+    end
+    
+    USER[👥 使用者] --> HTTPS
+    HTTPS --> CERT
+    CERT --> TUNNEL_AUTH
+    TUNNEL_AUTH --> ENCRYPT
+    ENCRYPT --> FLASK_SEC
+    FLASK_SEC --> INPUT_VAL
+    INPUT_VAL --> AUTH
+    AUTH --> AUTHZ
+    AUTHZ --> APP[⚡ Flask 應用]
+    
+    classDef security1 fill:#ffcdd2,stroke:#d32f2f,stroke-width:2px
+    classDef security2 fill:#f8bbd9,stroke:#c2185b,stroke-width:2px
+    classDef security3 fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    classDef security4 fill:#c5cae9,stroke:#3f51b5,stroke-width:2px
+    
+    class HTTPS,CERT security1
+    class TUNNEL_AUTH,ENCRYPT security2
+    class FLASK_SEC,INPUT_VAL security3
+    class AUTH,AUTHZ security4
+            </div>
+            <div class="description">
+                <h3>📚 學習重點</h3>
+                <ul>
+                    <li><strong>多層防護</strong>：從傳輸層到應用層的完整安全防護</li>
+                    <li><strong>自動化安全</strong>：ngrok 自動處理 SSL 證書和加密</li>
+                    <li><strong>開發友好</strong>：在保證安全的同時，簡化開發流程</li>
+                    <li><strong>可擴展性</strong>：可以根據需求添加更多安全層級</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 6. 開發工作流程圖 -->
+        <div class="section">
+            <h2>⚙️ 開發工作流程圖</h2>
+            <div class="mermaid">
+stateDiagram-v2
+    [*] --> 環境準備
+    
+    環境準備 --> 虛擬環境: 建立 venv
+    虛擬環境 --> 依賴安裝: 啟動環境
+    依賴安裝 --> 程式開發: pip install
+    
+    程式開發 --> 本地測試: 編寫 Flask 程式
+    本地測試 --> 程式開發: 發現問題
+    本地測試 --> ngrok啟動: 本地測試通過
+    
+    ngrok啟動 --> 遠端測試: 取得公開 URL
+    遠端測試 --> 程式開發: 需要修改
+    遠端測試 --> 部署完成: 測試通過
+    
+    部署完成 --> 監控維護: 正式使用
+    監控維護 --> 程式開發: 需要更新
+    監控維護 --> [*]: 專案結束
+    
+    note right of 環境準備
+        python -m venv venv
+        建立隔離環境
+    end note
+    
+    note right of 本地測試
+        localhost:5000
+        快速迭代開發
+    end note
+    
+    note right of 遠端測試
+        *.ngrok.io
+        真實環境測試
+    end note
+            </div>
+            <div class="description">
+                <h3>📚 學習重點</h3>
+                <ul>
+                    <li><strong>迭代開發</strong>：支援快速的開發-測試-修改循環</li>
+                    <li><strong>環境隔離</strong>：虛擬環境確保專案依賴的獨立性</li>
+                    <li><strong>雙重測試</strong>：本地測試確保基本功能，遠端測試驗證真實環境</li>
+                    <li><strong>持續改進</strong>：支援在運行中持續優化和更新</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#4facfe',
+                primaryTextColor: '#333',
+                primaryBorderColor: '#4facfe',
+                lineColor: '#666',
+                secondaryColor: '#00f2fe',
+                tertiaryColor: '#f8f9fa'
+            },
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                useMaxWidth: true,
+                showSequenceNumbers: true
+            },
+            gantt: {
+                useMaxWidth: true
+            }
+        });
+    </script>
+</body>
+</html>
